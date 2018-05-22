@@ -2,81 +2,67 @@
 
 ## Service or system overview
 
-**Service or system name:** 
+**DFS Identity Management Services:** 
 
 ### Business overview
 
-> What business need is met by this service or system? What expectations do we have about availability and performance?
-
-_(e.g. Provides reliable automated reconciliation of logistics transactions from the previous 24 hours)_
+_These services define the infrasture for and provide access to the DFS User Store and DFS Claims Store. These services should be able highly reliable and scalable to roughly a million users with only changes to the underlying infrastrutuce they are running on._
 
 ### Technical overview
 
-> What kind of system is this? Web-connected order processing? Back-end batch system? Internal HTTP-based API? ETL control system?
-
-_(e.g. Internal API for order reconciliation based on Ruby and RabbitMQ, deployed in Docker containers on Kubernetes)_
+_This system is an internal REST API using Node.js, Loopback, and MongoDB, all deployed in Docker containers to Kubernetes via Helm charts._
 
 ### Service Level Agreements (SLAs)
 
-> What explicit or implicit expectations are there from users or clients about the availability of the service or system?
-
-_(e.g. Contractual 99.9% service availability outside of the 03:00-05:00 maintenance window)_
+_This system should have 99.9% uptime, aside from scheduled manintance_
 
 ### Service owner
 
-> Which team owns and runs this service or system?
-
-_(e.g. The *Sneaky Sharks* team (Bangalore) develops and runs this service: sneaky.sharks@company.com / *#sneaky-sharks* on Slack / Extension 9265)_
+_DFS Identity Platform Team_
 
 ### Contributing applications, daemons, services, middleware
 
-> Which distinct software applications, daemons, services, etc. make up the service or system? What external dependencies does it have?
-
-_(e.g. Ruby app + RabbitMQ for source messages + PostgreSQL for reconciled transactions)_
+_Node.js runtime + Loopback for REST services + MongodB for storage + Docker + Kubernetes_
 
 ## System characteristics
 
-### Hours of operation
-
-> During what hours does the service or system actually need to operate? Can portions or features of the system be unavailable at times if needed?
+_This services is core to many DFS software offerings and as such should be available 24/7 with only planned service outages_
 
 #### Hours of operation - core features
 
-_(e.g. 03:00-01:00 GMT+0)_
+_Everyday of the Year_
 
 #### Hours of operation - secondary features
 
-_(e.g. 07:00-23:00 GMT+0)_
+_Everyday of the Year_
 
 ### Data and processing flows
 
 > How and where does data flow through the system? What controls or triggers data flows?
 
-_(e.g. mobile requests / scheduled batch jobs / inbound IoT sensor data )_
+_Web request from Active Disclosure and other DFS products_
 
 ### Infrastructure and network design
 
 > What servers, containers, schedulers, devices, vLANs, firewalls, etc. are needed?
 
-_(e.g. '10+ Ubuntu 14 VMs on AWS IaaS + 2 AWS Regions + 2 VPCs per Region + Route53')_
+_A Kubernetes Cluster with the ability to provision Persistent Volumes, DNS entries for each of the three services, Ambassador to map DNS entries to Kubernetes Services, Jenkins to build the containers_
 
 ### Resilience, Fault Tolerance (FT) and High Availability (HA)
 
 > How is the system resilient to failure? What mechanisms for tolerating faults are implemented? How is the system/service made highly available?
 
-_(e.g. 2 Active-Active data centres across two cities + two or more nodes at each layer)_
+_This system is fairly resistent to failure as the components are seperate enough that if one fails, it will not cause the others to fail. That said, if any component loses its connection to MongoDB, it will faill. Kuberntes comes with a number of built in safety mechanisms, including automatic restart of failed containers and pod autoscaling that will create more containers if the load on the existing containers becomes too high._
 
 ### Throttling and partial shutdown
 
-> How can the system be throttled or partially shut down e.g. to avoid flooding other dependent systems? Can the throughput be limited to (say) 100 requests per second? etc. What kind of connection back-off schemes are in place?
-
 #### Throttling and partial shutdown - external requests
 
-_(e.g. Commercial API gateway allows throttling control)_
+_This system can be throttled via Ambassador. If parts of this system are shutdown, it will effect other external systems that rely on this system. If MongoDB is taken down or fails, the entire system and all its dependents will also fail._
 
 #### Throttling and partial shutdown - internal components
 
-_(e.g. Exponential backoff on all HTTP-based services + `/health` healthcheck endpoints on all services)_
+_Each subsystem exposed a `/metrics` healthcheck endpoint. If a partial shutdown is required, you can stop any individual component without affecting the rest of this system, except MongoDB. If MongoDB is taken down or fails, the entire system and all its dependents will also fail._
 
 ### Expected traffic and load
 
@@ -100,16 +86,15 @@ _
 
 > What are the main differences between Production/Live and other environments? What kinds of things might therefore not be tested in upstream environments?
 
-_(e.g. Self-signed HTTPS certificates in Pre-Production - certificate expiry may not be detected properly in Production)_
+_There are no known environmental differences._
 
 ### Tools
 
 > What tools are available to help operate the system?
 
-_(e.g. Use the `queue-cleardown.sh` script to safely cleardown the processing queue nightly)_
+_Helm, Jenkins, and Kubernetes for making changes to the deployment on the cluster. Elasticsearch for logs and The Kubernetes WebUI and Grafana for metrics and health statuses._
 
 ## Required resources
-
 > What compute, storage, database, metrics, logging, and scaling resources are needed? What are the minimum and expected maximum sizes (in CPU cores, RAM, GB disk space, GBit/sec, etc.)?
 
 ### Required resources - compute
@@ -163,7 +148,7 @@ _(e.g. CloudInit bootstraps the installation of Puppet - Puppet then drives all 
 
 > How are configuration secrets managed?
 
-_(e.g. Secrets are managed with Hashicorp Vault with 3 shards for the master key)_
+_Secrets are generated on the fly and configured as Kubernetes Secrets objects for consumption by the services._
 
 ## System backup and restore
 
@@ -189,21 +174,19 @@ _(e.g. The Booking service must be switched off before Restore happens otherwise
 
 ### Log aggregation solution
 
-> What log aggregation & search solution will be used?
-
-_(e.g. The system will use the existng in-house ELK cluster. 2000-6000 messages per minute expected at normal load levels)_
+_The system will use Logstash for transport logs to an existing in-house Elastic Search cluster_
 
 ### Log message format
 
 > What kind of log message format will be used? Structured logging with JSON? `log4j` style single-line output?
 
-_(e.g. Log messages will use log4j compatible single-line format with wrapped stack traces)_
+Log messages will use log4j compatible multi-line format with wrapped stack traces
 
 ### Events and error messages
 
 > What significant events, state transitions and error events may be logged?
 
-_(e.g. IDs 1000-1999: Database events; IDs 2000-2999: message bus events; IDs 3000-3999: user-initiated action events; ...)_
+_All successful and unsuccessful requests as well as expections will be logged._
 
 ### Metrics
 
@@ -229,31 +212,31 @@ _(e.g. Provide `/health` HTTP endpoint: 200 --> basic health, 500 --> bad config
 
 > How is the software deployed? How does roll-back happen?
 
-_(e.g. We use GoCD to coordinate deployments, triggering a Chef run pulling RPMs from the internal yum repo)_
+_This sytem is deployed with Helm and Jenkins. Rollback will be initiated via a Jenkins deployment._
 
 ### Batch processing
 
 > What kind of batch processing takes place?
 
-_(e.g. Files are pushed via SFTP to the media server. The system processes up to 100 of these per hour on a `cron` schedule)_
+_None._
 
 ### Power procedures
 
 > What needs to happen when machines are power-cycled?
 
-_(e.g. *** WARNING: we have not investigated this scenario yet! ***)_
+_*** WARNING: we have not investigated this scenario yet! ***)_
 
 ### Routine and sanity checks
 
 > What kind of checks need to happen on a regular basis?
 
-_(e.g. All `/health` endpoints should be checked every 60secs plus the synthetic transaction checks run every 5 mins via Pingdom)_
+_All `/metrics` endpoints should be checked every 60 seconds._
 
 ### Troubleshooting
 
 > How should troubleshooting happen? What tools are available?
 
-_(e.g. Use a combination of the `/health` endpoint checks and the `abc-*.sh` scripts for diagnosing typical problems)_
+_Use a combination of the `/metrics` endpoint checks, Grafana, and logs to diagnose problems._
 
 ## Maintenance tasks
 
@@ -263,29 +246,29 @@ _(e.g. Use a combination of the `/health` endpoint checks and the `abc-*.sh` scr
 
 #### Normal patch cycle
 
-_(e.g. Use the standard OS patch test cycle together with deployment via Jenkins and Capistrano)_
+_Use the standard patch test cycle together with deployment via Jenkins and Helm_
 
 #### Zero-day vulnerabilities
 
-_(e.g. Use the early-warning notifications from UpGuard plus deployment via Jenkins and Capistrano)_
+_Zero-day vulnerabilities will be given highest priority and the normal patch cycle will be used to update the system._
 
 ### Daylight-saving time changes
 
 > Is the software affected by daylight-saving time changes (both client and server)?
 
-_(e.g. Server clocks all set to UTC+0. All date/time data converted to UTC with offset before processing)_
+_This system is not affected by daylights saving time changes._
 
 ### Data cleardown
 
 > Which data needs to be cleared down? How often? Which tools or scripts control cleardown? 
 
-_(e.g. Use `abc-cleardown.ps1` run nightly to clear down the document cache)_
+_No data in the system needs to be cleared down._
  
 ### Log rotation
 
 > Is log rotation needed? How is it controlled? 
 
-_(e.g. The Windows Event Log *ABC Service* is set to a maximum size of 512MB)_
+_This system uses logstash to transport logs and does save logs on disk. All local log information is lost when the container restarts._
 
 ## Failover and Recovery procedures
 
