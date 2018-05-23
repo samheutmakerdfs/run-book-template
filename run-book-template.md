@@ -128,13 +128,13 @@ _(e.g. Min: 10 encryption requests per node per minute. Max: around 100 encrypti
 
 > What kind of security is in place for passwords and Personally Identifiable Information (PII)? Are the passwords hashed with a strong hash function and salted?
 
-_(e.g. Passwords are hashed with a 10-character salt and SHA265)_
+_This system does not store passwords and instead relys on third party IdP's to authenticate users._
 
 ### Ongoing security checks
 
 > How will the system be monitored for security issues?
 
-_(e.g. The ABC tool scans for reported CVE issues and reports via the ABC dashboard)_
+_The depencies for this system will be monitored for security vulnerabilities by NPM, which checks for newly reported and existing vulnerabilities every time packages are downloaded. The containers that the components of this system will be packaged into will be monitored for vulnerabilities by Twistlock._
 
 ## System configuration
 
@@ -142,7 +142,7 @@ _(e.g. The ABC tool scans for reported CVE issues and reports via the ABC dashbo
 
 > How is configuration managed for the system?
 
-_(e.g. CloudInit bootstraps the installation of Puppet - Puppet then drives all system and application level configuration except for the XYZ service which is configured via `App.config` files in Subversion)_
+_Helm Charts. Each componenent of this system has a chart defining how the service should operate._
 
 ### Secrets management
 
@@ -156,7 +156,7 @@ _Secrets are generated on the fly and configured as Kubernetes Secrets objects f
 
 > Which parts of the system need to be backed up?
 
-_(e.g. Only the CoreTransactions database in PostgreSQL and the Puppet master database need to be backed up)_
+_Only the persistence layer needs to be backed up. We will Heptio Ark to snapshot the persisent volumes created by MongoDB._
 
 ### Backup procedures
 
@@ -224,7 +224,7 @@ _None._
 
 > What needs to happen when machines are power-cycled?
 
-_*** WARNING: we have not investigated this scenario yet! ***)_
+_*** WARNING: we have not investigated this scenario yet! ***_
 
 ### Routine and sanity checks
 
