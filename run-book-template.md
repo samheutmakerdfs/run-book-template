@@ -6,11 +6,11 @@
 
 ### Business overview
 
-_These services define the infrasture for and provide access to the DFS User Store and DFS Claims Store. These services should be able highly reliable and scalable to roughly a million users with only changes to the underlying infrastrutuce they are running on._
+_These services define the infrasture for and provide access to the DFS User Store and DFS Claims Store. These services should be able highly reliable and scalable to roughly a million users with only configuration changes to the underlying infrastrutuce they are running on._
 
 ### Technical overview
 
-_This system is an internal REST API using Node.js, Loopback, and MongoDB, all deployed in Docker containers to Kubernetes via Helm charts._
+_This system is an internal REST API using Node.js, Loopback, and MongoDB. All components in this system are deployed as Docker containers to Kubernetes via Helm charts._
 
 ### Service Level Agreements (SLAs)
 
@@ -18,11 +18,19 @@ _This system should have 99.9% uptime, aside from scheduled manintance_
 
 ### Service owner
 
-_DFS Identity Platform Team_
+_DFS Platform Team_
 
 ### Contributing applications, daemons, services, middleware
 
-_Node.js runtime + Loopback for REST services + MongodB for storage + Docker + Kubernetes_
+*Node.js* \
+*Loopback for REST services* \
+*Winston for logging* \
+*Logstash for log aggregration* \
+*Elasticsearch for log filtering* \
+*Prometheus for metrics* \
+*MongodB for storage* \
+*Docker Runtime* \
+*Kubernetes for orchestration*
 
 ## System characteristics
 
@@ -46,13 +54,13 @@ _Web request from Active Disclosure and other DFS products_
 
 > What servers, containers, schedulers, devices, vLANs, firewalls, etc. are needed?
 
-_A Kubernetes Cluster with the ability to provision Persistent Volumes, DNS entries for each of the three services, Ambassador to map DNS entries to Kubernetes Services, Jenkins to build the containers_
+_A Kubernetes Cluster with the ability to provision Persistent Volumes, DNS entries for each of the three services, Ambassador to map DNS entries to Kubernetes Services, Jenkins to build the containers, Helm to deploy the containers._
 
 ### Resilience, Fault Tolerance (FT) and High Availability (HA)
 
 > How is the system resilient to failure? What mechanisms for tolerating faults are implemented? How is the system/service made highly available?
 
-_This system is fairly resistent to failure as the components are seperate enough that if one fails, it will not cause the others to fail. That said, if any component loses its connection to MongoDB, it will faill. Kuberntes comes with a number of built in safety mechanisms, including automatic restart of failed containers and pod autoscaling that will create more containers if the load on the existing containers becomes too high._
+_This system is fairly resistent to failure as the components are seperate enough that if one fails, it will not cause the others to fail. That said, if any component loses its connection to MongoDB, it will faill. Kuberntes comes with a number of built in safety mechanisms, including automatic restart of failed containers and pod autoscaling that will create more containers if the load on the existing containers becomes too high. Pod scaling in production has not yet been configured._
 
 ### Throttling and partial shutdown
 
@@ -68,19 +76,17 @@ _Each subsystem exposed a `/metrics` healthcheck endpoint. If a partial shutdown
 
 > Details of the expected throughput/traffic: call volumes, peak periods, quiet periods. What factors drive the load: bookings, page views, number of items in Basket, etc.)
 
-_(e.g. Max: 1000 requests per second with 400 concurrent users - Friday @ 16:00 to Sunday @ 18:00, driven by likelihood of barbecue activity in the neighborhood)_
+_This system is able to reliably handle up to 100 requests per second with the current configuration._
 
 #### Hot or peak periods
-
-_
+_Peak periods will be quarterly and annually when finanicial reports are due for submission to the SEC._
 
 #### Warm periods
+_No information on warm periods is currently know._
 
-_
 
 #### Cool or quiet periods
-
-_
+_No information on quiet periods is currently known._
 
 ### Environmental differences
 
@@ -99,27 +105,28 @@ _Helm, Jenkins, and Kubernetes for making changes to the deployment on the clust
 
 ### Required resources - compute
 
-_(e.g. Min: 4 VMs with 2 vCPU each. Max: around 40 VMs)_
+
+_Min: 350m CPU on a Kubernetes Cluster. Max: Unknown_
 
 ### Required resources - storage
 
-_(e.g. Min: 10GB Azure blob storage. Max: around 500GB Azure blob storage)_
+_Min: 10GB Azure blob storage. Max: around 500GB Azure blob storage_
 
 ### Required resources - database
 
-_(e.g. Min: 500GB Standard Tier RDS. Max: around 2TB Standard Tier RDS)_
+_No external required database resources. Blob storage is mounted for persistence._
 
 ### Required resources - metrics
 
-_(e.g. Min: 100 metrics per node per minute. Max: around 6000 metrics per node per minute)_
+_Max: around 25 requests per second per replicaset for each service._
 
 ### Required resources - logging
 
-_(e.g. Min: 60 log lines per node per minute (100KB). Max: around 6000 log lines per node per minute (1MB))_
+_Max: around 25 log lines per second per replicaset for each service_
 
 ### Required resources - other
 
-_(e.g. Min: 10 encryption requests per node per minute. Max: around 100 encryption requests per node per minute)_
+_None._
 
 
 ## Security and access control
@@ -162,13 +169,13 @@ _Only the persistence layer needs to be backed up. We will Heptio Ark to snapsho
 
 > How does backup happen? Is service affected? Should the system be [partially] shut down first?
 
-_(e.g. Backup happens from the read replica - live service is not affected)_
+_Backups are done automatically and no manual action is needed. The system does not need to be shut down._
 
 ### Restore procedures
 
 > How does restore happen? Is service affected? Should the system be [partially] shut down first?
 
-_(e.g. The Booking service must be switched off before Restore happens otherwise transactions will be lost)_
+_Restore must be done manually by loading the backup into a persistent volume that can be mounted by Kubernetes._
 
 ## Monitoring and alerting
 
@@ -192,7 +199,7 @@ _All successful and unsuccessful requests as well as expections will be logged._
 
 > What significant metrics will be generated?
 
-_(e.g. Usual VM stats (CPU, disk, threads, etc.) + around 200 application technical metrics + around 400 user-level metrics)_
+_Usual containers  stats (CPU, disk, threads, etc.) + requests per second and the amount of time requests take on average._
 
 ### Health checks
 
@@ -200,11 +207,11 @@ _(e.g. Usual VM stats (CPU, disk, threads, etc.) + around 200 application techni
 
 #### Health of dependencies
 
-_(e.g. Use `/health` HTTP endpoint for internal components that expose it. Other systems and external endpoints: typically HTTP 200 but some synthetic checks for some services)_
+_Use `/metrics` HTTP endpoint for internal components that expose it. Other systems and external endpoints: typically HTTP 200 but some synthetic checks for some services. If a user can log into Active Disclosure, this system is at least working partially._
 
 #### Health of service
 
-_(e.g. Provide `/health` HTTP endpoint: 200 --> basic health, 500 --> bad configuration + `/health/deps` for checking dependencies)_
+_Check `/health` HTTP endpoint. Also check the `/api/explorer` endpoint on the `users` service and `claims` service. 200 -> service is up, 4xx or 5xx -> service is experiencing at least partial failure._
 
 ## Operational tasks
 
@@ -268,23 +275,23 @@ _No data in the system needs to be cleared down._
 
 > Is log rotation needed? How is it controlled? 
 
-_This system uses logstash to transport logs and does save logs on disk. All local log information is lost when the container restarts._
+_This system uses logstash to transport logs and does save logs on disk. All local log information is lost when a container restarts. Logs are sent to Elasticsearch and log rotatation is not needed._
 
 ## Failover and Recovery procedures
 
-> What needs to happen when parts of the system are failed over to standby systems? What needs to during recovery? 
+> What needs to happen when parts of the system are failed over to standby systems? What needs to happen during recovery? 
 
 ### Failover
 
-_
+_If this begigns to failover, it should be redeployed via Helm with a higher number of replicasets for each service. If the database starts to run out of the storage, a persisent volume with more storage should be provisioned.One the system is redeployed, Kubernetes and Ambassador will make sure that the servics are correctly mapped and accessible._
 
 ### Recovery
 
-_
+_If this goes down entirely, it should be redeployed via Helm with a higher number of replicasets for each service. If the database runs out of the storage, a persisent volume with more storage should be provisioned. One the system is redeployed, Kubernetes and Ambassador will make sure that the servics are correctly mapped and accessible._
 
 ### Troubleshooting Failover and Recovery
 
 > What tools or scripts are available to troubleshoot failover and recovery operations?
 
-_(e.g. Start with running `SELECT state__desc FROM sys.database__mirroring__endpoints` on the PRIMARY node and then use the scripts in the *db-failover* Git repo)_
+_Kubectl and the Kubernetes WebUI will provide insight into the revovery process._
 
